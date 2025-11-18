@@ -1,4 +1,4 @@
-# wishlist
+# EasyContact
 
 A new Flutter project.
 

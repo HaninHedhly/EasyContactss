@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../database/db_helper.dart';
-import 'delete_confirmation_page.dart'; // Confirmation page
+import '../models/contact.dart';           // ← NOUVEAU
+import '../services/api_service.dart';     // ← NOUVEAU
+import 'delete_confirmation_page.dart';   // ← inchangé
 
 class DeleteListPage extends StatefulWidget {
   const DeleteListPage({super.key});
@@ -10,20 +11,29 @@ class DeleteListPage extends StatefulWidget {
 }
 
 class _DeleteListPageState extends State<DeleteListPage> {
-  List<Map<String, dynamic>> contacts = [];
+  List<Contact> contacts = [];   // ← List<Contact> au lieu de List<Map>
 
   @override
   void initState() {
-    
     super.initState();
     loadContacts();
   }
 
   Future<void> loadContacts() async {
-    final data = await DBHelper.getContacts();
-    setState(() {
-      contacts = data;
-    });
+    try {
+      final data = await ApiService.getContacts();   // ← Appel API
+      if (mounted) {
+        setState(() {
+          contacts = data;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Impossible de charger les contacts"), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -35,30 +45,29 @@ class _DeleteListPageState extends State<DeleteListPage> {
         backgroundColor: Colors.purple,
       ),
       body: contacts.isEmpty
-          ? const Center(child: Text("Aucun contact 🩷"))
+          ? const Center(child: Text("Aucun contact"))
           : ListView.builder(
               itemCount: contacts.length,
               itemBuilder: (context, index) {
-                final c = contacts[index];
+                final c = contacts[index];   // ← c est maintenant un objet Contact
                 return Card(
                   color: Colors.purple[100],
                   child: ListTile(
-                    title: Text(c['name']),
-                    subtitle: Text("${c['phone']} • ${c['email']}"),
+                    title: Text(c.name),
+                    subtitle: Text("${c.phone} • ${c.email}"),
                     trailing: ElevatedButton(
                       child: const Text("Supprimer"),
                       onPressed: () async {
-                        // Navigate to confirmation delete page
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => DeleteContactPage(
-                              id: c['id'],
-                              name: c['name'],
+                              id: c.id!,      // ← c.id
+                              name: c.name,   // ← c.name
                             ),
                           ),
                         );
-                        loadContacts(); // refresh list
+                        loadContacts(); // recharge la liste après suppression
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFA5C1),
@@ -71,7 +80,3 @@ class _DeleteListPageState extends State<DeleteListPage> {
     );
   }
 }
-
-
-
-

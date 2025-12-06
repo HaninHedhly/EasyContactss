@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../database/db_helper.dart';
+import '../models/contact.dart';           // ← NOUVEAU
+import '../services/api_service.dart';     // ← NOUVEAU
 
 class EditContactPage extends StatefulWidget {
   final int id;
@@ -33,14 +34,28 @@ class _EditContactPageState extends State<EditContactPage> {
   }
 
   Future<void> updateContact() async {
-    await DBHelper.updateContact(
-      widget.id,
-      nameController.text,
-      phoneController.text,
-      emailController.text,
+    final updatedContact = Contact(
+      id: widget.id,
+      name: nameController.text.trim(),
+      phone: phoneController.text.trim(),
+      email: emailController.text.trim(),
     );
 
-    Navigator.pop(context); // back to EditListPage
+    try {
+      await ApiService.updateContact(updatedContact);  // ← Appel API
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Contact modifié avec succès !"), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context); // Retour à EditListPage
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur : $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -76,8 +91,7 @@ class _EditContactPageState extends State<EditContactPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD78EE4),
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
                 textStyle: const TextStyle(fontSize: 18),
               ),
             ),
@@ -85,5 +99,13 @@ class _EditContactPageState extends State<EditContactPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    super.dispose();
   }
 }

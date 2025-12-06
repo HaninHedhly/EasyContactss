@@ -1,8 +1,6 @@
 name: wishlist
-description: "A new Flutter project."
-
+description: "Application de gestion de contacts avec backend FastAPI"
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
@@ -13,13 +11,19 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-  
-  # Pour la connexion / signup
-  shared_preferences: ^2.1.0
 
-  # Pour SQLite
-  sqflite: ^2.3.0
-  path: ^1.9.0
+  # ──────────────────────────────
+  # API & SÉCURITÉ (remplace SQLite + SharedPreferences)
+  # ──────────────────────────────
+  http: ^1.2.2                    # Pour appeler le backend FastAPI
+  flutter_secure_storage: ^9.2.2   # Stockage sécurisé du token JWT (beaucoup mieux que SharedPreferences)
+
+  # ──────────────────────────────
+  # À supprimer plus tard (quand tout sera migré vers le backend)
+  # ──────────────────────────────
+  # shared_preferences: ^2.1.0     # Plus utilisé pour l'auth
+  # sqflite: ^2.3.0                # Plus utilisé
+  # path: ^1.9.0                    # Plus utilisé
 
 dev_dependencies:
   flutter_test:
@@ -29,15 +33,15 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-
-
-  # Assets (images, JSON, etc.)
+  # ──────────────────────────────
+  # Assets & Fonts (décommente si tu en as besoin plus tard)
+  # ──────────────────────────────
   # assets:
   #   - assets/images/
-
-  # Fonts (optionnel)
+  #
   # fonts:
-  #   - family: Schyler
+  #   - family: Poppins
   #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-#       - asset: fonts/Schyler-Italic.ttf
+  #       - asset: fonts/Poppins-Regular.ttf
+  #       - asset: fonts/Poppins-Bold.ttf
+  #         weight: 700

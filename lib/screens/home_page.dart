@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../database/db_helper.dart';
-import 'edit_contact_page.dart';
-import 'delete_contact_page.dart';
+import '../models/contact.dart';           // ← NOUVEAU
+import '../services/api_service.dart';     // ← NOUVEAU
+import 'edit_contact_page.dart';           // ← tu gardes ta page actuelle
+import 'delete_contact_page.dart';         // ← tu gardes ta page actuelle
 
 class ContactsHomePage extends StatefulWidget {
   const ContactsHomePage({super.key});
-
   @override
   State<ContactsHomePage> createState() => _ContactsHomePageState();
 }
@@ -15,7 +15,7 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
 
-  List<Map<String, dynamic>> contacts = [];
+  List<Contact> contacts = [];   // ← Changé : List<Contact> au lieu de List<Map>
 
   @override
   void initState() {
@@ -24,15 +24,20 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
   }
 
   Future<void> _loadContacts() async {
-    final data = await DBHelper.getContacts();
-    if (mounted) {
-      setState(() {
-        contacts = data;
-      });
+    try {
+      final data = await ApiService.getContacts();   // ← API
+      if (mounted) {
+        setState(() {
+          contacts = data;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar(message: "Erreur de chargement des contacts", backgroundColor: Colors.red);
+      }
     }
   }
 
- 
   Future<void> addContact() async {
     final String name = nameController.text.trim();
     final String phone = phoneController.text.trim();
@@ -50,7 +55,7 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
       return;
     }
 
-    // Validation téléphone (accepte espaces et + au début)
+    // Validation téléphone
     final phoneRegex = RegExp(r'^\+?[0-9]{8,15}$');
     if (!phoneRegex.hasMatch(phone.replaceAll(RegExp(r'\s+'), ''))) {
       _showSnackBar(message: "Numéro de téléphone invalide", backgroundColor: Colors.orange);
@@ -58,14 +63,11 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
     }
 
     try {
-      await DBHelper.insertContact(name, phone, email);
-
+      await ApiService.addContact(Contact(name: name, phone: phone, email: email)); // ← API
       nameController.clear();
       phoneController.clear();
       emailController.clear();
-
       _showSnackBar(message: "Contact ajouté avec succès !", backgroundColor: Colors.green);
-
       await _loadContacts();
     } catch (e) {
       _showSnackBar(message: "Erreur lors de l'ajout du contact", backgroundColor: Colors.red);
@@ -86,7 +88,6 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
       ),
     );
   }
-  // ────────────────────────────────
 
   @override
   void dispose() {
@@ -157,7 +158,7 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: addContact, // ← bien reliée ici
+                          onPressed: addContact,
                           icon: const Icon(Icons.add),
                           label: const Text("Ajouter le contact", style: TextStyle(fontSize: 16)),
                           style: ElevatedButton.styleFrom(
@@ -194,7 +195,7 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
                     : ListView.builder(
                         itemCount: contacts.length,
                         itemBuilder: (context, index) {
-                          final c = contacts[index];
+                          final c = contacts[index];   // ← c est maintenant un Contact
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 6),
                             elevation: 3,
@@ -203,12 +204,12 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
                               leading: CircleAvatar(
                                 backgroundColor: Colors.purple[100],
                                 child: Text(
-                                  c['name'][0].toUpperCase(),
+                                  c.name[0].toUpperCase(),
                                   style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple),
                                 ),
                               ),
-                              title: Text(c['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                              subtitle: Text("${c['phone']} • ${c['email']}", style: TextStyle(color: Colors.grey[600])),
+                              title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                              subtitle: Text("${c.phone} • ${c.email}", style: TextStyle(color: Colors.grey[600])),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -217,7 +218,7 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
                                     onPressed: () async {
                                       await Navigator.push(
                                         context,
-                                        MaterialPageRoute(builder: (_) => EditListPage()),
+                                        MaterialPageRoute(builder: (_) => const EditListPage()),
                                       );
                                       _loadContacts();
                                     },
@@ -227,7 +228,7 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
                                     onPressed: () async {
                                       await Navigator.push(
                                         context,
-                                        MaterialPageRoute(builder: (_) => DeleteListPage()),
+                                        MaterialPageRoute(builder: (_) => const DeleteListPage()),
                                       );
                                       _loadContacts();
                                     },
@@ -246,7 +247,6 @@ class _ContactsHomePageState extends State<ContactsHomePage> {
     );
   }
 }
-
 
 
 

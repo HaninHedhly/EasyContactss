@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../database/db_helper.dart';
+import '../services/api_service.dart';     // ← NOUVEAU (remplace DBHelper)
 
 class DeleteContactPage extends StatelessWidget {
   final int id;
@@ -8,8 +8,24 @@ class DeleteContactPage extends StatelessWidget {
   const DeleteContactPage({super.key, required this.id, required this.name});
 
   Future<void> deleteContact(BuildContext context) async {
-    await DBHelper.deleteContact(id);
-    Navigator.pop(context); // go back to DeleteListPage
+    try {
+      await ApiService.deleteContact(id);   // ← Appel API au lieu de DBHelper
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Contact supprimé avec succès"),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context); // Retour à DeleteListPage
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erreur : $e"), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override

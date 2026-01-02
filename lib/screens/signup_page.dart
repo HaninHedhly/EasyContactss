@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart';
+import '../services/api_service.dart'; // 🆕
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -13,44 +13,62 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
+  final ApiService apiService = ApiService(); // 🆕
+  bool isLoading = false; // 🆕
 
+  // 🆕 Inscription avec API
   Future<void> signUp() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
     String confirm = confirmController.text.trim();
 
     if (email.isEmpty || password.isEmpty || confirm.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez remplir tous les champs 💜')),
-      );
+      _showSnackBar('Veuillez remplir tous les champs 💜', Colors.orange);
       return;
     }
 
     if (password != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Les mots de passe ne correspondent pas 💜')),
-      );
+      _showSnackBar('Les mots de passe ne correspondent pas 💜', Colors.red);
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-
-    if (prefs.containsKey(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cet email existe déjà 💜')),
-      );
+    if (password.length < 6) {
+      _showSnackBar('Le mot de passe doit contenir au moins 6 caractères', Colors.orange);
       return;
     }
 
-    await prefs.setString(email, password);
+    setState(() => isLoading = true);
 
+    String? error = await apiService.signup(email, password);
+
+    setState(() => isLoading = false);
+
+    if (error == null) {
+      // Inscription réussie
+      _showSnackBar('Compte créé avec succès ✨', Colors.green);
+      
+      // Retour à la page de connexion après 1 seconde
+      await Future.delayed(const Duration(seconds: 1));
+      
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+      }
+    } else {
+      _showSnackBar(error, Colors.red);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Compte créé avec succès ✨')),
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
@@ -76,6 +94,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 const SizedBox(height: 20),
                 TextField(
                   controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email, color: Colors.purple),
@@ -104,12 +123,22 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: signUp,
+                  onPressed: isLoading ? null : signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple,
                     foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
                   ),
-                  child: const Text('S’inscrire 💜'),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('S\'inscrire 💜'),
                 ),
                 const SizedBox(height: 10),
                 TextButton(
@@ -129,5 +158,3 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 }
-
-

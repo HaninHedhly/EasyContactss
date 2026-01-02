@@ -15,11 +15,13 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # Pour la connexion / signup
-  shared_preferences: ^2.1.0
+  shared_preferences: ^2.2.2
 
   # Pour SQLite
   sqflite: ^2.3.0
-  path: ^1.9.0
+  path: ^1.8.3
+  http: ^1.1.0  # 🆕 Pour les requêtes HTTP
+  flutter_secure_storage: ^9.0.0  # 🆕 Pour stocker le token
 
 dev_dependencies:
   flutter_test:

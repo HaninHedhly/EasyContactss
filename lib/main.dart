@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/signup_page.dart';
 import 'screens/home_page.dart';
+import 'services/api_service.dart'; // 🆕
 
 void main() {
   runApp(const MyApp());
@@ -54,7 +54,7 @@ class MyApp extends StatelessWidget {
           titleLarge: TextStyle(color: Colors.white),
         ),
       ),
-      themeMode: ThemeMode.system, // Suit le mode du téléphone
+      themeMode: ThemeMode.system,
       home: const LoginPage(),
     );
   }
@@ -70,17 +70,27 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final ApiService apiService = ApiService(); // 🆕
+  bool isLoading = false; // 🆕
 
-  // Vérifier le login avec SharedPreferences
+  // 🆕 Login avec API
   Future<void> login() async {
-    final prefs = await SharedPreferences.getInstance();
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
 
-    String? storedPassword = prefs.getString(email);
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar('Veuillez remplir tous les champs', Colors.orange);
+      return;
+    }
 
-    if (storedPassword != null && storedPassword == password) {
-      // Login réussi → aller à la page des contacts
+    setState(() => isLoading = true);
+
+    String? error = await apiService.login(email, password);
+
+    setState(() => isLoading = false);
+
+    if (error == null) {
+      // Login réussi
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -88,13 +98,19 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email ou mot de passe incorrect'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackBar(error, Colors.red);
     }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -143,12 +159,21 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: login,
+                  onPressed: isLoading ? null : login, // 🆕 Désactiver pendant le chargement
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
                     textStyle: const TextStyle(fontSize: 18),
                   ),
-                  child: const Text('Se connecter'),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Se connecter'),
                 ),
                 const SizedBox(height: 10),
                 TextButton(
@@ -168,4 +193,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-
